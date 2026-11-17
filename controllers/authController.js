@@ -19,11 +19,10 @@ exports.register = async (req, res) => { // Fungsi untuk membuat akun baru
     throw errorHttp(400, `password maksimal ${PASSWORD_MAKS_BYTE} byte`); // Memberi pesan error jika password lebih dari 72 byte
   }
 
-  const hashed = await bcrypt.hash(password, SALT_ROUNDS); // Mengacak password agar tidak mudah diketahui orang lain
-
-  const user = await User.create({ username, password: hashed }); // Menyimpan username dan password ke database
-
-  res.status(201).json({ id: user._id, username: user.username }); // Memberi tahu bahwa akun berhasil dibuat
+    const hashed = await bcrypt.hash(password, SALT_ROUNDS);
+  // role TIDAK diambil dari req.body: akun hasil register selalu 'user'
+  const user = await User.create({ username, password: hashed });
+  res.status(201).json({ id: user._id, username: user.username, role: user.role });
 };
 
 exports.login = async (req, res) => { // Membuat fungsi untuk proses login pengguna
@@ -42,24 +41,16 @@ exports.login = async (req, res) => { // Membuat fungsi untuk proses login pengg
   // Pesan dibuat sama agar orang lain tidak tahu username yang terdaftar
   if (!cocok) throw errorHttp(401, 'Username atau password salah'); // Menampilkan pesan jika username atau password salah
 
-  const token = jwt.sign( // Membuat token sebagai tanda pengguna berhasil login
-    { id: user._id, username: user.username }, // Memasukkan ID dan username pengguna ke dalam token
-    process.env.JWT_SECRET, // Menggunakan kunci rahasia untuk membuat token
-    { expiresIn: process.env.JWT_EXPIRES_IN || '1h' } // Menentukan masa berlaku token, jika tidak diatur maka berlaku 1 jam
+    const token = jwt.sign(
+    { id: user._id, username: user.username, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
   );
 
   res.json({ token }); // Mengirim token kepada pengguna setelah berhasil login
 };
 // Contoh endpoint yang membaca data pengguna dari token
 
-exports.me = (req, res) => { // Membuat fungsi untuk mengambil data pengguna yang sedang login
-
-  res.json({ // Mengirim data pengguna dalam bentuk JSON
-
-    id: req.user.id, // Mengambil ID pengguna dari token
-
-    username: req.user.username, // Mengambil username pengguna dari token
-
-    berlakuSampai: new Date(req.user.exp * 1000) // Mengubah waktu kedaluwarsa token menjadi tanggal dan waktu yang bisa dibaca
-  });
+exports.me = (req, res) => {
+  res.json({ id: req.user.id, username: req.user.username, role: req.user.role, berlakuSampai: new Date(req.user.exp * 1000) });
 };

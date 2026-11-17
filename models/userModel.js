@@ -13,7 +13,13 @@ const userSchema = new mongoose.Schema({ // Membuat aturan data pengguna
 
   // select: false -> password tidak ditampilkan saat mengambil data
   password: { type: String, required: true, select: false }, // Menyimpan password pengguna dan menyembunyikannya secara default
-
+    // Peran pengguna: register selalu menghasilkan 'user'
+  role: {
+    type: String,
+    enum: { values: ['user', 'admin'], message: "role hanya boleh 'user' atau 'admin'" },
+    default: 'user',
+  },
+  
   createdAt: { type: Date, default: Date.now }, // Menyimpan tanggal akun dibuat secara otomatis
 });
 
